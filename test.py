@@ -19,47 +19,54 @@ def get_veloStations_by_city(city_url):
     return response_json.get("records", [])
 
 cities_urls = {
-    "lille" : "https://opendata.lillemetropole.fr/api/records/1.0/search/?dataset=vlille-realtime&q=&rows=3000&facet=libelle&facet=nom&facet=commune&facet=etat&facet=type&facet=etatconnexion",
-    "paris" : "https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&q=&rows=3000&facet=etatconnexion"
+    "Lille" : "https://opendata.lillemetropole.fr/api/records/1.0/search/?dataset=vlille-realtime&q=&rows=3000&facet=libelle&facet=nom&facet=commune&facet=etat&facet=type&facet=etatconnexion",
+    "Paris" : "https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&q=&rows=3000&facet=etatconnexion"
 }
 
-
-vlilles = get_veloStations_by_city(cities_urls["lille"])
-vlilles_to_insert = [
+velo_stations = [
     {
-        '_id': elem.get('fields', {}).get('libelle'),
-        'name': elem.get('fields', {}).get('nom', '').title(),
-        'geometry': elem.get('geometry'),
-        'size': elem.get('fields', {}).get('nbvelosdispo') + elem.get('fields', {}).get('nbplacesdispo'),
-        'source': {
-            'dataset': 'Lille',
-            'id_ext': elem.get('fields', {}).get('libelle')
-        },
-        'tpe': elem.get('fields', {}).get('type', '') == 'AVEC TPE'
+        "city" : city,
+        "stations" : get_veloStations_by_city(url)
     }
-    for elem in vlilles
+    for city, url in cities_urls.items()
 ]
-try: 
-    db.stations.insert_many(vlilles_to_insert, ordered=False)
-except:
-    pass
 
-velibs = get_veloStations_by_city(cities_urls["paris"])
-velibs_to_insert = [
-    {
-        '_id': elem.get('fields', {}).get('stationcode'),
-        'name': elem.get('fields', {}).get('name', '').title(),
-        'geometry': elem.get('geometry'),
-        'size': elem.get('fields', {}).get('capacity'),
-        'source': {
-            'dataset': 'Paris',
-            'id_ext': elem.get('fields', {}).get('stationcode')
-        },
-        'tpe': elem.get('fields', {}).get('is_renting', '') == 'OUI'
-    }
-    for elem in velibs
-]
-try: 
-    db.stations.insert_many(velibs_to_insert, ordered=False)
-except:
-    pass
+#print(velo_stations[0].get("stations")[0].get("datasetid"))
+
+for city in velo_stations:
+    for station in city.get("stations"):
+        if(city.get("city") == "Lille"):
+            db.stations.update_one(
+                { '_id' : station.get('fields', {}).get('libelle') },
+                {
+                    'name': station.get('fields', {}).get('nom', '').title(),
+                    'geometry': station.get('geometry'),
+                    'size': station.get('fields', {}).get('nbvelosdispo') + station.get('fields', {}).get('nbplacesdispo'),
+                    'source': {
+                        'dataset': 'Lille',
+                        'id_ext': station.get('fields', {}).get('libelle')
+                    },
+                    'tpe': station.get('fields', {}).get('type', '') == 'AVEC TPE'
+                },
+                upsert=True
+            )
+        if(city.get('city') == 'Paris'):
+            db.stations.update_one(
+                { '_id' : station.get('fields', {}).get('stationcode') },
+                {
+                    'name': station.get('fields', {}).get('name', '').title(),
+                    'geometry': station.get('geometry'),
+                    'size': station.get('fields', {}).get('capacity'),
+                    'source': {
+                        'dataset': 'Paris',
+                        'id_ext': station.get('fields', {}).get('stationcode')
+                    },
+                    'tpe': station.get('fields', {}).get('is_renting', '') == 'OUI'
+                },
+                upsert=True
+            )
+
+# for city in velo_stations:
+#     for station in city.get("stations"):
+#         if(city.get("city") == "Lille"):
+#             print(station.get('fields', {}).get('libelle'))
