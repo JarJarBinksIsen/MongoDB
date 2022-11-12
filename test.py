@@ -78,4 +78,4 @@ while True:
     db.datas.insert_many(datas, ordered=False)
     
     print(db.stations.count_documents({}), db.datas.count_documents({}))   
-    time.sleep(10)
+    time.sleep(500)

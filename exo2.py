@@ -1,14 +1,13 @@
-from pymongo.mongo_client import MongoClient
+
+import pymongo
 from pymongo.server_api import ServerApi
 import requests
 import json
 import dateutil.parser
 import time
-import pymongo
 
 
-client = MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=ServerApi('1'))
-
+client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=ServerApi('1'))
 db = client.vls
 
 def get_veloStations_by_city(city_url):
@@ -35,12 +34,10 @@ while True:
         for elem in vlilles
     ]
     
-    for data in lille_datas:
-        last_station_update = db.datas.find({ '$and': [{ "station_id":{'$exists':True}},{ "station_id":data["station_id"]}]}).sort("date", -1).limit(1)[0]
-        #print(last_station_update["station_id"])
-        if(last_station_update["bike_available"] != data["bike_available"] or last_station_update["stand_available"] != data["stand_available"]):
-            db.datas.insert_one(data)
-        db.datas.update_one({'date': data["date"], "station_id": data["station_id"]}, { "$set": data }, upsert=True)
+    try:
+        db.stations.update_many({}, lille_datas, upsert=True)
+    except:
+        pass
 
     velibs = get_veloStations_by_city(cities_urls["paris"])
     paris_datas = [

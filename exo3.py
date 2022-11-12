@@ -1,25 +1,23 @@
-from pymongo import MongoClient, GEOSPHERE
-from bson.son import SON
+import bson.son
+import pymongo
 
-client = MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net")
+client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net")
 db = client.vls
 
 # ISEN GPS location : 50.6342041,3.0465664
 user_position_long = float(input("Your longitude ? (Enter 3.0465664 for ISEN Lille longitude) :"))
 user_position_lat = float(input("Your latitude (Enter 50.6342041 for ISEN Lille latitude) :"))
 
-user_position_long = 3.0465664
-user_position_lat = 50.6342041
 
-db.stations.create_index([("geometry", GEOSPHERE)])
+db.stations.create_index([("geometry", pymongo.GEOSPHERE)])
 results = db.stations.find(
     {
         'geometry': 
         {
-            '$near': SON(
+            '$near': bson.son.SON(
                 [
                     ('$geometry',
-                    SON(
+                    bson.son.SON(
                         [
                             ('type', 'Point'),
                             ('coordinates', [user_position_long, user_position_lat])
@@ -33,4 +31,6 @@ results = db.stations.find(
 )
 
 for result in results:
-    print(result)
+    last_station_datas = db.datas.find({'station_id':result['_id']}).sort([('date', pymongo.DESCENDING), ('_id', pymongo.DESCENDING)]).limit(1)
+    for el in last_station_datas:
+        print(result['name'], ':', el['bike_available'], ' velos dispos et ', el['stand_available'], ' stands dispos')

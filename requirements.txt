@@ -1,5 +1,7 @@
 pymongo
-time
 dateutil.parser
 json
 requests
+bson.son
+pymongo.server_api
+time
