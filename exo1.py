@@ -1,14 +1,9 @@
-
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+import pymongo
+import pymongo.server_api
 import requests
 import json
-import dateutil.parser
-import time
-import pymongo
 
-
-client = MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=ServerApi('1'))
+client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=pymongo.server_api.ServerApi('1'))
 
 db = client.vls
 
@@ -64,3 +59,5 @@ try:
     db.stations.update_many({}, velibs_to_insert, upsert=True)
 except:
     pass
+
+print(db.stations.count_documents({}))

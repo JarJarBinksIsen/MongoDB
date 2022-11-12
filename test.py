@@ -1,72 +1,81 @@
-
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+import pymongo
+import pymongo.server_api
 import requests
 import json
 import dateutil.parser
 import time
-import pymongo
 
-
-client = MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=ServerApi('1'))
-
+client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=pymongo.server_api.ServerApi('1'))
 db = client.vls
 
-# exercice 1 : get stations name & location from urls and store in vls.stations
 def get_veloStations_by_city(city_url):
     response = requests.request("GET", city_url)
     response_json = json.loads(response.text.encode('utf8'))
     return response_json.get("records", [])
 
 cities_urls = {
-    "Lille" : "https://opendata.lillemetropole.fr/api/records/1.0/search/?dataset=vlille-realtime&q=&rows=3000&facet=libelle&facet=nom&facet=commune&facet=etat&facet=type&facet=etatconnexion",
-    "Paris" : "https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&q=&rows=3000&facet=etatconnexion"
+    "lille" : "https://opendata.lillemetropole.fr/api/records/1.0/search/?dataset=vlille-realtime&q=&rows=3000&facet=libelle&facet=nom&facet=commune&facet=etat&facet=type&facet=etatconnexion",
+    "paris" : "https://opendata.paris.fr/api/records/1.0/search/?dataset=velib-disponibilite-en-temps-reel&q=&rows=3000&facet=etatconnexion"
 }
 
-velo_stations = [
-    {
-        "city" : city,
-        "stations" : get_veloStations_by_city(url)
-    }
-    for city, url in cities_urls.items()
-]
+while True:
+    stations = []
+    datas = []
 
-#print(velo_stations[0].get("stations")[0].get("datasetid"))
-
-for city in velo_stations:
-    for station in city.get("stations"):
-        if(city.get("city") == "Lille"):
-            db.stations.update_one(
-                { '_id' : station.get('fields', {}).get('libelle') },
+    # Lille
+    lille_stations = get_veloStations_by_city(cities_urls["lille"])
+    for lille_station in lille_stations:
+        stations.append(
+            {
+                '_id': lille_station.get('fields', {}).get('libelle'),
+                'name': lille_station.get('fields', {}).get('nom', '').title(),
+                'geometry': lille_station.get('geometry'),
+                'size': lille_station.get('fields', {}).get('nbvelosdispo') + lille_station.get('fields', {}).get('nbplacesdispo'),
+                'source': 
                 {
-                    'name': station.get('fields', {}).get('nom', '').title(),
-                    'geometry': station.get('geometry'),
-                    'size': station.get('fields', {}).get('nbvelosdispo') + station.get('fields', {}).get('nbplacesdispo'),
-                    'source': {
-                        'dataset': 'Lille',
-                        'id_ext': station.get('fields', {}).get('libelle')
-                    },
-                    'tpe': station.get('fields', {}).get('type', '') == 'AVEC TPE'
+                    'dataset': 'Lille',
+                    'id_ext': lille_station.get('fields', {}).get('libelle')
                 },
-                upsert=True
-            )
-        if(city.get('city') == 'Paris'):
-            db.stations.update_one(
-                { '_id' : station.get('fields', {}).get('stationcode') },
-                {
-                    'name': station.get('fields', {}).get('name', '').title(),
-                    'geometry': station.get('geometry'),
-                    'size': station.get('fields', {}).get('capacity'),
-                    'source': {
-                        'dataset': 'Paris',
-                        'id_ext': station.get('fields', {}).get('stationcode')
-                    },
-                    'tpe': station.get('fields', {}).get('is_renting', '') == 'OUI'
+                'tpe': lille_station.get('fields', {}).get('type', '') == 'AVEC TPE'
+            }
+        )
+        datas.append(
+            {
+                'bike_available': lille_station.get('fields', {}).get('nbvelosdispo'),
+                'stand_available': lille_station.get('fields', {}).get('nbplacesdispo'),
+                'date': dateutil.parser.parse(lille_station.get('record_timestamp')),
+                'station_id': lille_station.get('fields', {}).get('libelle')
+            }
+        )
+        
+    # Paris
+    paris_stations = get_veloStations_by_city(cities_urls['paris'])
+    for paris_station in paris_stations:
+        stations.append(
+            {
+                '_id': paris_station.get('fields', {}).get('stationcode'),
+                'name': paris_station.get('fields', {}).get('name', '').title(),
+                'geometry': paris_station.get('geometry'),
+                'size': paris_station.get('fields', {}).get('capacity'),
+                'source': {
+                    'dataset': 'Paris',
+                    'id_ext': paris_station.get('fields', {}).get('stationcode')
                 },
-                upsert=True
-            )
+                'tpe': paris_station.get('fields', {}).get('is_renting', '') == 'OUI'
+            }
+        )
+        datas.append(
+            {
+                'bike_available': paris_station.get('fields', {}).get('numbikesavailable'),
+                'stand_available': paris_station.get('fields', {}).get('numdocksavailable'),
+                'date': dateutil.parser.parse(paris_station.get('record_timestamp')),
+                'station_id': paris_station.get('fields', {}).get('stationcode')
+            }
+        )
 
-# for city in velo_stations:
-#     for station in city.get("stations"):
-#         if(city.get("city") == "Lille"):
-#             print(station.get('fields', {}).get('libelle'))
+    for elem in stations:
+        db.datas.update_many({'_id':elem.get('_id')}, { '$set' : elem}, upsert=True)
+    db.datas.insert_many(datas, ordered=False)
+    
+    print(db.stations.count_documents({}), db.datas.count_documents({}))   
+    time.sleep(10)
