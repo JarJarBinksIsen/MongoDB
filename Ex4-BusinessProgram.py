@@ -2,13 +2,15 @@ import pymongo
 import pymongo.server_api
 import requests
 import json
-import dateutil.parser
 import time
 
 client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=pymongo.server_api.ServerApi('1'))
 db = client.vls
+test = db.stations.find({'_id' : 9})
+for r in test:
+    print(r)
 
-def launch_finder():
+def finder():
     search = str(input('Enter chars to search :'))
     #db.stations.create_index([('name', pymongo.TEXT)])
     results = db.stations.find(
@@ -61,7 +63,7 @@ def menu():
     choice = int(input())
 
     if choice == 1:
-        launch_finder()
+        finder()
     elif choice == 2:
         updater()
     elif choice == 3:
