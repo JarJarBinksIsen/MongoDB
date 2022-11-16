@@ -6,26 +6,21 @@ import time
 
 client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=pymongo.server_api.ServerApi('1'))
 db = client.vls
-test = db.stations.find({'_id' : 9})
-for r in test:
-    print(r)
 
 def finder():
     search = str(input('Enter chars to search :'))
     #db.stations.create_index([('name', pymongo.TEXT)])
     results = db.stations.find(
         { 'name': { '$regex': search, '$options': 'i' } }
-        #{ 'score': { '$meta': 'textScore' } }
     )
-    #.sort([('score', pymongo.DESCENDING)])
     for result in results:
         print(result)
     menu()
 
 def updater():
     station_id = int(input('Which station (_id) ?\n'))
-    print('FIELDS :\n1) name\n2) geometry\n3) size\n4) tpe')
-    field_num = int(input('\nWhich field do you want to update\n'))
+    print('\nFIELDS :\n1) name\n2) geometry\n3) size\n4) tpe')
+    field_num = int(input('Which field do you want to update ?\n'))
     field_names = ['_id', 'name', 'geometry', 'size', 'tpe']
     if field_num > 4:
         print('Incorrect')
@@ -45,24 +40,64 @@ def updater():
             { '_id' : station_id },
             { '$set' : { field : val } }
         )
-    print('Updated', station_id, field)
+    print('Updated', station_id, field, val)
+    menu()
 
 def deleter():
-    print('Deleted')
+    station_id = int(input('Which station (_id) ?\n'))
+    sure = input('It will delete the station and all its datas. Are you sure (y/n) ? ')
+    if sure == 'y':
+        db.datas.delete_many({'station_id': station_id})
+        db.stations.delete_one({'_id': station_id})
+        print('Deleted')
+    else:
+        print('Operation aborted')
+    menu()
 
 def deactivate():
     print('Deactivated')
     
 def stat():
-    db.datas.find()
+    ratio_results = []
+    stations = db.stations.find({})
+    for station in stations:
+        selection = []
+        eachStationDatas = db.datas.find({'station_id': station['_id']})
+        for station_data in eachStationDatas:
+            if station_data['date'].weekday() < 5 and station_data['date'].hour == 18:
+                selection.append(station_data['_id'])
+        enum_bikes = []
+        for sel in selection:
+            aStation_selection = db.datas.find_one({'_id': sel})
+            if aStation_selection['station_id'] == station['_id']:
+                enum_bikes.append(aStation_selection['bike_available'])
+        tmp = 0
+        for bikes in enum_bikes:
+            tmp += bikes
+        if(len(enum_bikes) > 0):
+            mean = tmp/len(enum_bikes)
+            ratio = mean/station['size']
+            if ratio < 0.2:
+                ratio_results.append(
+                    {
+                        'id': station['_id'],
+                        'ratio': ratio,
+                        'name' : station['name']
+                    }
+                )
+    for ratio_result in ratio_results:
+        print(ratio_result.get('name'))
     print('Here it is')
+    menu()
 
 def menu():
     print('MENU :')
     print('1) Find stations with name')
     print('2) Update a station (need its _id)')
     print("3) Delete a staion and its datas (need station's _id)")
-    print('4) give all stations with a ratio bike/total_stand under 20% between 18h and 19h00 (monday to friday)')
+    print('4) Deactivate all staions inside an area')
+    print('5) give all stations with a ratio bike/total_stand under 20% between 18h and 19h00 (monday to friday)')
+    print('Press 0 to exit')
     choice = int(input())
 
     if choice == 1:
@@ -75,6 +110,8 @@ def menu():
         deactivate()
     elif choice == 5:
         stat()
+    elif choice == 0:
+        exit()
     else:
         print('Must choose')
         menu()
