@@ -32,5 +32,6 @@ results = db.stations.find(
 
 for result in results:
     last_station_datas = db.datas.find({'station_id':result['_id']}).sort([('date', pymongo.DESCENDING), ('_id', pymongo.DESCENDING)]).limit(1)
+    #last_station_datas = db.datas.find({'station_id':result['_id']}).sort('date', -1).limit(1)
     for el in last_station_datas:
         print(result['name'], ':', el['bike_available'], ' velos dispos et ', el['stand_available'], ' stands dispos')

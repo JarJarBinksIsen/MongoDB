@@ -50,6 +50,9 @@ def updater():
 def deleter():
     print('Deleted')
 
+def deactivate():
+    print('Deactivated')
+    
 def stat():
     db.datas.find()
     print('Here it is')
@@ -69,6 +72,8 @@ def menu():
     elif choice == 3:
         deleter()
     elif choice == 4:
+        deactivate()
+    elif choice == 5:
         stat()
     else:
         print('Must choose')
