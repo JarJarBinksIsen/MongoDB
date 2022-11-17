@@ -55,9 +55,117 @@ def deleter():
     menu()
 
 def deactivate():
+    polygone = []
+    while True:
+        print('Enter q to quit')
+        point_lg = input('New coordinate longitude : ')
+        if point_lg == 'q':
+            break
+        point_lat = input('New coordinate latitude : ')
+        if point_lg == 'q':
+            break
+        polygone.append([float(point_lg), float(point_lat)])
+
+    #polygone.append(polygone[0])
+    #area = db.stations.update_many(
+    area = db.stations.find(
+        {
+            'geometry': {
+                '$geoWithin': {
+                    '$geometry': {
+                        'type' : "Polygon" ,
+                        'coordinates': [ [ 
+                            [ 3.0527401, 50.6360707 ],
+                            [ 3.0343294, 50.6348459 ],
+                            [ 3.0372906, 50.6262437 ],
+                            [ 3.0592203, 50.6267065 ],
+                            [ 3.0527401, 50.6360707 ]
+                        ] ]
+                    }
+                }
+            }
+        }
+        ,{
+            '$set': { 'available': False }
+        }
+    )
+    # area = db.stations.find(
+    #     {
+    #         'geometry': 
+    #         {
+    #             '$geoWithin': bson.son.SON(
+    #                 [
+    #                     ('$geometry',
+    #                     bson.son.SON(
+    #                         [
+    #                             ('type', 'Polygon'),
+    #                             ('coordinates', [polygone])
+    #                         ]
+    #                     ))
+    #                 ]
+    #             )
+    #         }
+    #     }
+    # )
+    for station in area:
+        print(staion)
     print('Deactivated')
     
 def stat():
+    match_stations_datas = db.datas.aggregate({
+        [
+            {
+                '$project': {
+                    '_id': 0,
+                    'hour': { '$hour': "$date" },
+                    'dayOfWeek': { '$dayOfWeek': "$date" },
+                    'bikes': 'bike_available',
+                }
+            },
+            {
+                '$match': {
+                    'dayOfWeek': {'$gt': 1, '$lt': 7},
+                    'hour': 18
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'stations',
+                    'localField': 'station_id',
+                    'foreignField': '_id',
+                    'as': 'station'
+                }
+            },
+            {
+                '$group': {
+                    '_id': '$station_id',
+                    'average_bikes': { '$avg': '$bike_available' }
+                }
+            }
+            {
+                '$match': {
+                    'ratio': { '$lt': 0.2 }
+                }
+            }
+        ]
+    })
+    for resultat in match_stations_datas:
+        print(resultat)
+    # for st in match_stations_datas:
+    #     db.stations.find({
+    #         [
+    #             {
+    #                 '$project': {
+    #                     'ratio': { st['total']/'$size' }
+    #                 }
+    #             },
+    #             {
+    #                 '$match': {
+    #                     'ratio': { '$lt': 0.2 }
+    #                 }
+    #             }
+    #         ]
+    #     })
     ratio_results = []
     stations = db.stations.find({})
     for station in stations:
