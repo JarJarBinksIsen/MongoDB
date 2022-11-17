@@ -80,14 +80,16 @@ def stat():
             if ratio < 0.2:
                 ratio_results.append(
                     {
-                        'id': station['_id'],
                         'ratio': ratio,
-                        'name' : station['name']
+                        'id': station['_id'],
+                        'name' : station['name'],
+                        'city': station['source'].get('dataset')
+                        
                     }
                 )
     for ratio_result in ratio_results:
-        print(ratio_result.get('name'))
-    print('Here it is')
+        print('In city', ratio_result.get('city'), '- station', ratio_result.get('name'), 'with id', ratio_result['id'],'has a', round(ratio_result.get('ratio')*100, 1), '% ratio')
+    print('For a total of', len(ratio_results), 'stations')
     menu()
 
 def menu():
