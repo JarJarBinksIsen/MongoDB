@@ -1,10 +1,11 @@
 # MongoDB  
   Welcome to Fabien Bruge's MongoDB Project
   
-  Available in Lille ? une station peut avoir l'état out_of_service mais l'etatConnexion Connected  
+  There are 3 programs : 
+    - Ex1Ex2-WorkerProgram.py : gets cities self-service bicycles stations and stored into a database every 500s (8m20). I decided to make the 2 first programs in one, so stations are also updated (tpe or availibility changes, new station created...)
 
-Rennes : n'a pas d'option tpe  
+    - Ex3-UserProgram.py : a client program to find stations around a specified GPS point location
 
-J'ai décidé de mettre l'exercice 1 et 2 dans le même programme, worker, pour update la disponibilité des stations, ou encore pour ajouter les nouvelles stations qui pourraient être créées.  
+    - Ex4-BusinessProgram.py : offers many options and operations to do like an update, a deletion or gives all stations with a ratio bike/total_stand under 20% between 18h and 19h00 (monday to friday)
 
-deactivate = set unavailable
+  These programs have been developped with VSCode in Python and MongoDB languages
