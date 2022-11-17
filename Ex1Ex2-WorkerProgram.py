@@ -145,7 +145,7 @@ while True:
     for index, station in enumerate(stations):
         db.stations.replace_one({'_id':station.get('_id')}, station, upsert=True)
         if index%200 == 0:
-            print(index)
+            print(index) # to follow where the program is
     
     db.datas.insert_many(datas, ordered=False)
     

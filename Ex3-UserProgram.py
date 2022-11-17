@@ -28,23 +28,36 @@ except:
 
 results = db.stations.find(
     {
-        'geometry': 
-        {
-            '$near': bson.son.SON(
-                [
-                    ('$geometry',
-                    bson.son.SON(
-                        [
-                            ('type', 'Point'),
-                            ('coordinates', [user_position_long, user_position_lat])
-                        ]
-                    )),
-                    ('$maxDistance', dist)
-                ]
-            )
+        'geometry': {
+            '$near': {
+                '$geometry': {
+                    'type': 'Point',
+                    'coordinates': [user_position_long, user_position_lat]
+                },
+                '$maxDistance': dist
+            }
         }
     }
 )
+# results = db.stations.find(
+#     {
+#         'geometry': 
+#         {
+#             '$near': bson.son.SON(
+#                 [
+#                     ('$geometry',
+#                     bson.son.SON(
+#                         [
+#                             ('type', 'Point'),
+#                             ('coordinates', [user_position_long, user_position_lat])
+#                         ]
+#                     )),
+#                     ('$maxDistance', dist)
+#                 ]
+#             )
+#         }
+#     }
+# )
 
 for result in results:
     #last_station_datas = db.datas.find({'station_id':result['_id']}).sort([('date', pymongo.DESCENDING), ('_id', pymongo.DESCENDING)]).limit(1)

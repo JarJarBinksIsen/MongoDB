@@ -15,7 +15,6 @@ def finder():
     )
     for result in results:
         print(result)
-    menu()
 
 def updater():
     station_id = int(input('Which station (_id) ?\n'))
@@ -41,7 +40,6 @@ def updater():
             { '$set' : { field : val } }
         )
     print('Updated', station_id, field, val)
-    menu()
 
 def deleter():
     station_id = int(input('Which station (_id) ?\n'))
@@ -52,21 +50,30 @@ def deleter():
         print('Deleted')
     else:
         print('Operation aborted')
-    menu()
 
 def deactivate():
+    print('Enter at least 3 coordinates to draw a polygon area (first coordinate will automatically be added to close the polygon) in which every station will deactivated')
     polygone = []
+    def verif(point_l):
+        if point_l == 'q':
+            break
+        try:
+            point_l = float(point_l)
+        except:
+            print('Incorrect entry, please restart entire operation')
+            deactivate()
+        return point_l
     while True:
         print('Enter q to quit')
-        point_lg = input('New coordinate longitude : ')
-        if point_lg == 'q':
-            break
-        point_lat = input('New coordinate latitude : ')
-        if point_lg == 'q':
-            break
-        polygone.append([float(point_lg), float(point_lat)])
+        point_lg = verif(input('New coordinate longitude : '))
+        point_lat = verif(input('New coordinate latitude : '))
+        polygone.append([point_lg, point_lat])
 
-    #polygone.append(polygone[0])
+    if len(polygone) < 3:
+        polygone = [ [ 3.0527401, 50.6360707 ], [ 3.0343294, 50.6348459 ], [ 3.0372906, 50.6262437 ], [ 3.0592203, 50.6267065 ], [ 3.0527401, 50.6360707 ] ]
+        #deactivate()
+    polygone.append(polygone[0])
+
     #area = db.stations.update_many(
     area = db.stations.find(
         {
@@ -74,13 +81,7 @@ def deactivate():
                 '$geoWithin': {
                     '$geometry': {
                         'type' : "Polygon" ,
-                        'coordinates': [ [ 
-                            [ 3.0527401, 50.6360707 ],
-                            [ 3.0343294, 50.6348459 ],
-                            [ 3.0372906, 50.6262437 ],
-                            [ 3.0592203, 50.6267065 ],
-                            [ 3.0527401, 50.6360707 ]
-                        ] ]
+                        'coordinates': [ polygone ]
                     }
                 }
             }
@@ -89,30 +90,11 @@ def deactivate():
         #     '$set': { 'available': False }
         # }
     )
-    # area = db.stations.find(
-    #     {
-    #         'geometry': 
-    #         {
-    #             '$geoWithin': bson.son.SON(
-    #                 [
-    #                     ('$geometry',
-    #                     bson.son.SON(
-    #                         [
-    #                             ('type', 'Polygon'),
-    #                             ('coordinates', [polygone])
-    #                         ]
-    #                     ))
-    #                 ]
-    #             )
-    #         }
-    #     }
-    # )
     for station in area:
         print(station)
-    print('Deactivated')
+    print('\nAll these stations are now deactivated\n')
     
 def stat():
-    #db.datas.aggregate([])
     match_stations_datas = db.datas.aggregate(
         [
             {
@@ -125,7 +107,7 @@ def stat():
             },
             {
                 '$match': {
-                    'dayOfWeek': {'$gt': 1, '$lt': 7},
+                    'dayOfWeek': {'$gt': 1, '$lt': 7}, # 1 is Sunday & 7 is Saturday
                     'hour': 18
                 }
             },
@@ -170,10 +152,9 @@ def stat():
     )
     for res in match_stations_datas:
         print('In city', res.get('station').get('source').get('dataset')+',', 'station :', res.get('station').get('name')+',', 'with id', res['_id'],'has a ratio of', round(res.get('ratio')*100, 1), '%')
-    menu()
 
 def menu():
-    print('MENU :')
+    print('\nMENU :')
     print('1) Find stations with name')
     print('2) Update a station (need its _id)')
     print("3) Delete a staion and its datas (need station's _id)")
@@ -196,6 +177,6 @@ def menu():
         exit()
     else:
         print('Must choose')
-        menu()
+    menu()
 
 menu()
