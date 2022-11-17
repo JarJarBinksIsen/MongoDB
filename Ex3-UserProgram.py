@@ -1,4 +1,3 @@
-import bson.son
 import pymongo
 
 client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net")
@@ -39,28 +38,7 @@ results = db.stations.find(
         }
     }
 )
-# results = db.stations.find(
-#     {
-#         'geometry': 
-#         {
-#             '$near': bson.son.SON(
-#                 [
-#                     ('$geometry',
-#                     bson.son.SON(
-#                         [
-#                             ('type', 'Point'),
-#                             ('coordinates', [user_position_long, user_position_lat])
-#                         ]
-#                     )),
-#                     ('$maxDistance', dist)
-#                 ]
-#             )
-#         }
-#     }
-# )
-
 for result in results:
-    #last_station_datas = db.datas.find({'station_id':result['_id']}).sort([('date', pymongo.DESCENDING), ('_id', pymongo.DESCENDING)]).limit(1)
     last_station_datas = db.datas.find({'station_id':result['_id']}).sort('date', -1).limit(1)
     for el in last_station_datas:
         print(result['name'], ':', el['bike_available'], ' velos dispos et ', el['stand_available'], ' stands dispos')

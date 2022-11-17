@@ -1,5 +1,5 @@
 import pymongo
-import pymongo.server_api
+from pymongo import server_api
 import requests
 import json
 import dateutil.parser
@@ -7,7 +7,7 @@ import time
 import datetime
 import re
 
-client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=pymongo.server_api.ServerApi('1'))
+client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=server_api.ServerApi('1'))
 db = client.vls
 
 cities_urls = {

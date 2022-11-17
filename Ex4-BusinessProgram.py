@@ -1,8 +1,5 @@
 import pymongo
 import pymongo.server_api
-import requests
-import json
-import time
 
 client = pymongo.MongoClient("mongodb+srv://root:root@cluster0.eisd22z.mongodb.net/?retryWrites=true&w=majority", server_api=pymongo.server_api.ServerApi('1'))
 db = client.vls
@@ -54,28 +51,32 @@ def deleter():
 def deactivate():
     print('Enter at least 3 coordinates to draw a polygon area (first coordinate will automatically be added to close the polygon) in which every station will deactivated')
     polygone = []
-    def verif(point_l):
-        if point_l == 'q':
-            break
+    verif = True
+    def check(point_l):
         try:
             point_l = float(point_l)
+            return True
         except:
+            if point_l == 'q':
+                return point_l
             print('Incorrect entry, please restart entire operation')
             deactivate()
-        return point_l
-    while True:
-        print('Enter q to quit')
-        point_lg = verif(input('New coordinate longitude : '))
-        point_lat = verif(input('New coordinate latitude : '))
-        polygone.append([point_lg, point_lat])
+    while verif:
+        print('Enter q to end new entries')
+        point_lg = input('New coordinate longitude : ')
+        if check(point_lg) == 'q':
+            break
+        point_lat = input('New coordinate latitude : ')
+        if check(point_lat) == 'q':
+            break
+        polygone.append([float(point_lg), float(point_lat)])
 
     if len(polygone) < 3:
-        polygone = [ [ 3.0527401, 50.6360707 ], [ 3.0343294, 50.6348459 ], [ 3.0372906, 50.6262437 ], [ 3.0592203, 50.6267065 ], [ 3.0527401, 50.6360707 ] ]
-        #deactivate()
+        #polygone = [ [ 3.0527401, 50.6360707 ], [ 3.0343294, 50.6348459 ], [ 3.0372906, 50.6262437 ], [ 3.0592203, 50.6267065 ], [ 3.0527401, 50.6360707 ] ]
+        deactivate()
     polygone.append(polygone[0])
 
-    #area = db.stations.update_many(
-    area = db.stations.find(
+    area = db.stations.update_many(
         {
             'geometry': {
                 '$geoWithin': {
@@ -85,13 +86,11 @@ def deactivate():
                     }
                 }
             }
+        },
+        {
+            '$set': { 'available': False }
         }
-        # ,{
-        #     '$set': { 'available': False }
-        # }
     )
-    for station in area:
-        print(station)
     print('\nAll these stations are now deactivated\n')
     
 def stat():
@@ -130,6 +129,12 @@ def stat():
                     'average_bikes': 1,
                     'the_station': { '$arrayElemAt': ['$station', 0] }
                 }
+            },
+            {
+                '$match': {
+                    'the_station.size': { '$gt': 0 }
+                }
+
             },
             {
                 '$project': {

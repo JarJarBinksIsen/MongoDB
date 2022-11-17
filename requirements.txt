@@ -1,7 +1,3 @@
-pymongo
-dateutil.parser
-json
-requests
-bson.son
-pymongo.server_api
-time
+pymongo==3.12.0
+python_dateutil==2.8.2
+requests==2.26.0

@@ -8,4 +8,4 @@
 
   These programs have been developped with VSCode in Python and MongoDB languages.  
   Packages needed to run these programs are specified in requirements.txt  
-  To launch a program : in command console, run python -u <filepath><filename.extension>
+  To launch a program : in command console, run python -u "filepath/filename.extension"
