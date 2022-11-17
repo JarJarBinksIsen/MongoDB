@@ -85,9 +85,9 @@ def deactivate():
                 }
             }
         }
-        ,{
-            '$set': { 'available': False }
-        }
+        # ,{
+        #     '$set': { 'available': False }
+        # }
     )
     # area = db.stations.find(
     #     {
@@ -108,18 +108,19 @@ def deactivate():
     #     }
     # )
     for station in area:
-        print(staion)
+        print(station)
     print('Deactivated')
     
 def stat():
-    match_stations_datas = db.datas.aggregate({
+    #db.datas.aggregate([])
+    match_stations_datas = db.datas.aggregate(
         [
             {
                 '$project': {
-                    '_id': 0,
+                    '_id': '$station_id',
                     'hour': { '$hour': "$date" },
                     'dayOfWeek': { '$dayOfWeek': "$date" },
-                    'bikes': 'bike_available',
+                    'bikes': '$bike_available',
                 }
             },
             {
@@ -129,75 +130,46 @@ def stat():
                 }
             },
             {
+                '$group': {
+                    '_id': '$_id',
+                    'average_bikes': { '$avg': '$bikes' }
+                }
+            },
+            {
                 '$lookup': {
                     'from': 'stations',
-                    'localField': 'station_id',
+                    'localField': '_id',
                     'foreignField': '_id',
                     'as': 'station'
                 }
             },
             {
-                '$group': {
-                    '_id': '$station_id',
-                    'average_bikes': { '$avg': '$bike_available' }
+                '$project': {
+                    'average_bikes': 1,
+                    'the_station': { '$arrayElemAt': ['$station', 0] }
                 }
-            }
+            },
+            {
+                '$project': {
+                    'average_bikes': 1,
+                    'station': '$the_station',
+                    'ratio' : {
+                        '$divide': [
+                            { '$toDouble': '$average_bikes' },
+                            { '$toDouble': '$the_station.size' }
+                        ]
+                    }
+                }
+            },
             {
                 '$match': {
                     'ratio': { '$lt': 0.2 }
                 }
             }
         ]
-    })
-    for resultat in match_stations_datas:
-        print(resultat)
-    # for st in match_stations_datas:
-    #     db.stations.find({
-    #         [
-    #             {
-    #                 '$project': {
-    #                     'ratio': { st['total']/'$size' }
-    #                 }
-    #             },
-    #             {
-    #                 '$match': {
-    #                     'ratio': { '$lt': 0.2 }
-    #                 }
-    #             }
-    #         ]
-    #     })
-    ratio_results = []
-    stations = db.stations.find({})
-    for station in stations:
-        selection = []
-        eachStationDatas = db.datas.find({'station_id': station['_id']})
-        for station_data in eachStationDatas:
-            if station_data['date'].weekday() < 5 and station_data['date'].hour == 18:
-                selection.append(station_data['_id'])
-        enum_bikes = []
-        for sel in selection:
-            aStation_selection = db.datas.find_one({'_id': sel})
-            if aStation_selection['station_id'] == station['_id']:
-                enum_bikes.append(aStation_selection['bike_available'])
-        tmp = 0
-        for bikes in enum_bikes:
-            tmp += bikes
-        if(len(enum_bikes) > 0):
-            mean = tmp/len(enum_bikes)
-            ratio = mean/station['size']
-            if ratio < 0.2:
-                ratio_results.append(
-                    {
-                        'ratio': ratio,
-                        'id': station['_id'],
-                        'name' : station['name'],
-                        'city': station['source'].get('dataset')
-                        
-                    }
-                )
-    for ratio_result in ratio_results:
-        print('In city', ratio_result.get('city'), '- station', ratio_result.get('name'), 'with id', ratio_result['id'],'has a', round(ratio_result.get('ratio')*100, 1), '% ratio')
-    print('For a total of', len(ratio_results), 'stations')
+    )
+    for res in match_stations_datas:
+        print('In city', res.get('station').get('source').get('dataset')+',', 'station :', res.get('station').get('name')+',', 'with id', res['_id'],'has a ratio of', round(res.get('ratio')*100, 1), '%')
     menu()
 
 def menu():
